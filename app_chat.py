@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_tags import st_tags
 from langchain_core.messages import AIMessage, HumanMessage
-from app.chains import instruction_chain, behavioral_chain, technical_chain
+from app.chains import interview_chains, instruction_chain
 
 st.title("HireBot")
 
@@ -31,35 +31,24 @@ for message in st.session_state.messages:
 
 def chat(prompt= None):
     # Append user message to chat history
-    if prompt:
-        st.session_state.messages.append(HumanMessage(content=prompt))
+    if not prompt:
+        history = [HumanMessage(content="Hello")]
     else:
-        prompt = "Hello"
+        st.session_state.messages.append(HumanMessage(content=prompt))
+        history = st.session_state.messages
     
-    history = st.session_state.messages
+    chain_input = {
+        "candidate_name": st.session_state.data['candidate_name'],
+        "job_title": st.session_state.data['job_title'],
+        "number_of_questions": st.session_state.data['number_of_questions'],
+        "skills": st.session_state.data['skills'],
+        "instructions": st.session_state.instructions,
+        "chat_history": history,
+    }
     
-    if not history:
-        history = [HumanMessage("Hello")]
-    
-    if st.session_state.data['interview_type'] == "Technical":
-        response = technical_chain.invoke({
-            "candidate_name": st.session_state.data['candidate_name'],
-            "job_title": st.session_state.data['job_title'],
-            "number_of_questions": st.session_state.data['number_of_questions'],
-            "skills": st.session_state.data['skills'],
-            "instructions": st.session_state.instructions,
-            "chat_history": history,
-        })
-
-    elif st.session_state.data['interview_type'] == "Behavioral":
-        response = behavioral_chain.invoke({
-            "candidate_name": st.session_state.data['candidate_name'],
-            "job_title": st.session_state.data['job_title'],
-            "number_of_questions": st.session_state.data['number_of_questions'],
-            "skills": st.session_state.data['skills'],
-            "instructions": st.session_state.instructions,
-            "chat_history": history,
-        })
+    chain = interview_chains[st.session_state.data['interview_type']]
+    # Generate response
+    response = chain.invoke(chain_input)
     
     # Append AI response to chat history
     st.session_state.messages.append(AIMessage(content=response))
@@ -74,7 +63,7 @@ with st.sidebar: # Initialize Side Bar Items
     # Collect user input
     name = st.text_input("Candidate Name")
     job_title = st.text_input("Job Title")
-    interview_type = st.selectbox("Interview Type", ["Behavioral", "Technical"])
+    interview_type = st.selectbox("Interview Type", ["behavioral", "technical"])
     number_of_questions = st.number_input("Number of Questions", min_value=1, max_value=10, value=5)
     skills = st_tags()
     
