@@ -12,3 +12,8 @@ instruction_chain = templates.instructions_template | chatbot | StrOutputParser(
 
 behavioral_chain = templates.behavioral_template | chatbot | StrOutputParser()
 technical_chain = templates.technical_template | chatbot | StrOutputParser()
+
+interview_chains = {
+    "behavioral": behavioral_chain,
+    "technical": technical_chain
+}
