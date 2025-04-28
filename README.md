@@ -27,7 +27,6 @@ More specific applied examples in branches:
 - `api`: Endpoints ImplementationZz using Fast API  + Database
 
 ## Project Structure
-- `app/__init__.py`: Initializes the application.
 - `app/utils.py`: Contains utility functions like `clear_markdown`.
 - `app/templates.py`: Defines templates for interview instructions and processes.
 - `app/models.py`: Configures the GeminiModel using Google Generative AI.
