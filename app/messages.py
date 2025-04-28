@@ -15,7 +15,10 @@ Keep instructions concise, clear and actionable.
 Return only the interview-specific instructions without any additional commentary.'''
 
 intro = "Your name is HireBot, An experienced Interviewer conducting a behavioral interview."
-outro = "When the interview is over, please give the user a summarization performance and provide feedback.\n\nThen at the end Put this statement AS IT IS 'END OF INTERVIEW'"
+outro = """When the interview is over follow these steps:
+- Ask the user if he has any questions about the interview.
+- If the user has any questions about the interview, answer them.
+- When not give the user a performance summarization and provide feedback, Then at the end Put this statement AS IT IS 'END OF INTERVIEW'"""
 
 behavioral_message = '''
 
