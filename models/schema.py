@@ -1,40 +1,33 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from config.database import Base
-from sqlalchemy import Column, Integer, String, JSON
+from sqlalchemy import Column, String
 
-class InterviewRequest(BaseModel):
-    interview_id: int
-    candidate_name: str
-    job_title: str
-    interview_type: str  # "technical" or "behavioral"
-    number_of_questions: int = 5
+class InterviewProperties(BaseModel):
+    candidate_name: str = Field(..., min_length=1)
+    job_title: str = Field(..., min_length=1)
+    interview_type: str = Field(..., pattern="^(technical|behavioral)$")
+    number_of_questions: int = Field(..., gt=2, le=15)
     skills: list[str] = []
 
 class InterviewResponse(BaseModel):
-    interview_id: int
     response: str
 
-class Interview(Base):
-    __tablename__ = "interviews"
+class Instructions(Base):
+    __tablename__ = "instructions"
 
-    interview_id = Column(Integer, primary_key=True, index=True)
-    candidate_name = Column(String, nullable=False)
-    job_title = Column(String, nullable=False)
-    interview_type = Column(String, nullable=False)  # "technical" or "behavioral"
-    number_of_questions = Column(Integer, default=5)
-    skills = Column(JSON, default=[])
-    instructions = Column(String, nullable=False)
+    interview_type = Column(String, primary_key=True, nullable=False)
+    job_title = Column(String, primary_key=True, nullable=False)
+    content = Column(String, nullable=False)
 
 class ChatMessage(BaseModel):
-    role: str     # "user" or "assistant"
-    message: str
+    role: str = Field(..., pattern="^(user|assistant)$")
+    message: str = Field(..., min_length=1)
 
 class ChatRequest(BaseModel):
-    interview_id: int
-    chat_history: list[ChatMessage]
-    prompt: str
+    interview_properties: InterviewProperties
+    chat_history: list[ChatMessage] = Field(default_factory=list, min_items=1)
+    prompt: str = Field(..., min_length=1)
 
 class ChatResponse(BaseModel):
-    interview_id: int
     response: str
-    ended: bool = False
+    ended: bool

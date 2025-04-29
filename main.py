@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi import FastAPI, HTTPException, Request, Depends, Body
 from fastapi.responses import JSONResponse
-from models.schema import InterviewRequest, InterviewResponse, Interview, ChatRequest, ChatResponse
+from models.schema import InterviewProperties, InterviewResponse, ChatRequest, ChatResponse, Instructions
 import gc
 
 
@@ -40,7 +40,7 @@ async def health_check() -> JSONResponse:
 
 
 @app.post("/init_interview", description="Initialize a new interview session")
-async def init_interview(request: InterviewRequest, db: Session = Depends(get_db)) -> JSONResponse:
+async def init_interview(request: InterviewProperties, db: Session = Depends(get_db)) -> JSONResponse:
     """
     Initialize a new interview session.
     """    
@@ -49,46 +49,36 @@ async def init_interview(request: InterviewRequest, db: Session = Depends(get_db
         # Initialize database service
         db_service = DatabaseService(db)
         
-        # Validate request data
-        if request.interview_type not in interview_types:
-            raise HTTPException(status_code=400, detail=f"Invalid interview type, must be one of the following: {interview_types}")
-        
-        if request.number_of_questions <= 0:
-            raise HTTPException(status_code=400, detail="Number of questions must be greater than 0")
-        
         if not request.skills:
             request.skills = []
         
         # Initialize Instructions
-        instructions = instruction_chain.invoke({
+        instructions = db_service.get_instructions(request.interview_type, request.job_title.lower().replace(' ', ''))        
+        
+        if instructions:
+            instructions_content = instructions.content
+        else:
+            instructions_content = instruction_chain.invoke({
+                "candidate_name": request.candidate_name,
+                "job_title": request.job_title,
+                "number_of_questions": request.number_of_questions,
+                "skills": request.skills,
+                "interview_type": request.interview_type,
+            })
+            db_service.add_instructions(Instructions(
+                                            job_title=request.job_title,
+                                            interview_type=request.interview_type,
+                                            content=instructions_content,
+                                        )
+            )
+        
+        # Construct Chain input
+        chain_input = {
             "candidate_name": request.candidate_name,
             "job_title": request.job_title,
             "number_of_questions": request.number_of_questions,
             "skills": request.skills,
-            "interview_type": request.interview_type,
-        })
-        
-        # Make Interview Data Object
-        interview = Interview(
-            interview_id= request.interview_id,
-            candidate_name= request.candidate_name,
-            job_title= request.job_title,
-            interview_type= request.interview_type,
-            number_of_questions= request.number_of_questions,
-            skills= request.skills,
-            instructions= instructions,
-        )
-        
-        # Store interview data in the database
-        db_service.add_interview(interview)
-        
-        # Construct Chain input
-        chain_input = {
-            "candidate_name": interview.candidate_name,
-            "job_title": interview.job_title,
-            "number_of_questions": interview.number_of_questions,
-            "skills": interview.skills,
-            "instructions": interview.instructions,
+            "instructions": instructions_content,
             "chat_history": [HumanMessage("Hello")],
         }
         
@@ -98,7 +88,7 @@ async def init_interview(request: InterviewRequest, db: Session = Depends(get_db
         # Generate response
         response = chain.invoke(chain_input)
         
-        return InterviewResponse(interview_id=request.interview_id, response=response)
+        return InterviewResponse(response= response)
     
     except Exception as e:
         if 'status_code' in str(e):
@@ -109,7 +99,7 @@ async def init_interview(request: InterviewRequest, db: Session = Depends(get_db
             raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/chat", response_model=ChatResponse, description="Proceed a Chat session or create a new one")
+@app.post("/chat", response_model= ChatResponse, description="Proceed a Chat session or create a new one")
 async def chat(request: ChatRequest,  db: Session = Depends(get_db)) -> JSONResponse:
     """
     Proceed a chat session or create a new one.
@@ -118,10 +108,9 @@ async def chat(request: ChatRequest,  db: Session = Depends(get_db)) -> JSONResp
         # Initialize database service
         db_service = DatabaseService(db)
         
-        # Get interview data from the database
-        interview = db_service.get_interview(request.interview_id)
-        if not interview:
-            raise HTTPException(status_code=404, detail="Interview not found")
+        # Get Instructions
+        interview_properties = request.interview_properties
+        instructions_content = db_service.get_instructions(interview_properties.interview_type, interview_properties.job_title)
         
         # Load Chat History in Langchain format
         roles = {"user": HumanMessage, "assistant": AIMessage}
@@ -139,16 +128,16 @@ async def chat(request: ChatRequest,  db: Session = Depends(get_db)) -> JSONResp
         
         # Construct Chain input
         chain_input = {
-            "candidate_name": interview.candidate_name,
-            "job_title": interview.job_title,
-            "number_of_questions": interview.number_of_questions,
-            "skills": interview.skills,
-            "instructions": interview.instructions,
+            "candidate_name": interview_properties.candidate_name,
+            "job_title": interview_properties.job_title,
+            "number_of_questions": interview_properties.number_of_questions,
+            "skills": interview_properties.skills,
+            "instructions": instructions_content,
             "chat_history": request.chat_history,
         }
         
         # Determine the chain based on interview type
-        chain = interview_chains[interview.interview_type]
+        chain = interview_chains[interview_properties.interview_type]
         
         # Generate response
         response = chain.invoke(chain_input)
@@ -162,7 +151,6 @@ async def chat(request: ChatRequest,  db: Session = Depends(get_db)) -> JSONResp
             ended = False
         
         return ChatResponse(
-            interview_id=interview.interview_id,
             response= response,
             ended=ended,
         )
