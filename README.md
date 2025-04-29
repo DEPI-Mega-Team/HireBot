@@ -46,7 +46,6 @@ HireBot is an advanced AI-powered chatbot designed to assist with interview prep
 **Request Model**:
 ```json
 {
-  "interview_id": int,
   "candidate_name": str,
   "job_title": str,
   "interview_type": str,
@@ -56,26 +55,23 @@ HireBot is an advanced AI-powered chatbot designed to assist with interview prep
 ```
 
 **Request Attributes**:
-- `interview_id` (int): Unique identifier for the interview.
-- `candidate_name` (str): Name of the candidate (required).
-- `job_title` (str): Job title for the interview (required).
+- `candidate_name` (str): Name of the candidate (required, minimum length: 1).
+- `job_title` (str): Job title for the interview (required, minimum length: 1).
 - `interview_type` (str): Type of interview. Allowed values:
   - `"technical"`
   - `"behavioral"`
-- `number_of_questions` (int): Number of questions in the interview. Default is 5, must be greater than 0.
-- `skills` (list[str]): List of skills to focus on during the interview (optional).
+- `number_of_questions` (int): Number of questions in the interview. Must be greater than 2 and less than or equal to 15 (required).
+- `skills` (list[str]): List of skills to focus on during the interview (optional, defaults to an empty list).
 
 **Response Model**:
 ```json
 {
-  "interview_id": int,
   "response": str
 }
 ```
 
 **Response Attributes**:
-- `interview_id` (int): Unique identifier for the interview.
-- `response` (str): Generated instructions and initial response.
+- `response` (str): Initial response.
 
 **Error Responses**:
 - `400`: Invalid interview type or number of questions.
@@ -91,32 +87,30 @@ HireBot is an advanced AI-powered chatbot designed to assist with interview prep
 **Request Model**:
 ```json
 {
-  "interview_id": int,
-  "chat_history": list[ChatMessage]
+  "interview_properties": InterviewProperties,
+  "chat_history": list[ChatMessage],
   "prompt": str
 }
 ```
 
 **Request Attributes**:
-- `interview_id` (int): Unique identifier for the interview (required).
-- `chat_history` (list[ChatMessage]): List of previous chat messages (optional). Each message contains:
+- `interview_properties` (InterviewProperties): All needed interview properties (required).
+- `chat_history` (list[ChatMessage]): List of previous chat messages (optional, minimum 1 item). Each message contains:
   - `role` (str): Role of the message sender. Allowed values:
     - `"user"`
     - `"assistant"`
-  - `message` (str): Content of the message.
-- `prompt` (str): New user prompt to continue the chat (required).
+  - `message` (str): Content of the message (required, minimum length: 1).
+- `prompt` (str): New user prompt to continue the chat (required, minimum length: 1).
 
 **Response Model**:
 ```json
 {
-  "interview_id": int,
   "response": str,
   "ended": bool
 }
 ```
 
 **Response Attributes**:
-- `interview_id` (int): Unique identifier for the interview.
 - `response` (str): Chatbot's response to the prompt.
 - `ended` (bool): Indicates if the interview has ended.
 
@@ -128,35 +122,28 @@ HireBot is an advanced AI-powered chatbot designed to assist with interview prep
 
 ## Request and Response Models
 
-### InterviewRequest
+### InterviewProperties
 - **Attributes**:
-  - `interview_id` (int): Unique identifier for the interview.
-  - `candidate_name` (str): Name of the candidate (required).
-  - `job_title` (str): Job title for the interview (required).
-  - `interview_type` (str): Type of interview, allowed values: `"technical"`, `"behavioral"` (required).
-  - `number_of_questions` (int): Number of questions, default is 5, must be greater than 0.
-  - `skills` (list[str]): List of skills to focus on, optional.
-
-### InterviewResponse
-- **Attributes**:
-  - `interview_id` (int): Unique identifier for the interview.
-  - `response` (str): Generated instructions and initial response.
+  - `candidate_name` (str): Name of the candidate (required, minimum length: 1).
+  - `job_title` (str): Job title for the interview (required, minimum length: 1).
+  - `interview_type` (str): Type of interview, allowed values: `"technical"`, `"behavioral"` (required, must match pattern `^(technical|behavioral)$`).
+  - `number_of_questions` (int): Number of questions, must be greater than 2 and less than or equal to 15 (required).
+  - `skills` (list[str]): List of skills to focus on, optional (defaults to an empty list).
 
 ### ChatMessage
 - **Attributes**:
   - `role` (str): Role of the message sender, allowed values: `"user"`, `"assistant"`.
-  - `message` (str): Content of the message.
+  - `message` (str): Content of the message (required, minimum length: 1).
 
 ### ChatRequest
 - **Attributes**:
-  - `interview_id` (int): Unique identifier for the interview (required).
-  - `chat_history` (list[ChatMessage]): List of previous chat messages, optional.
-  - `prompt` (str): New user prompt to continue the chat (required).
+  - `interview_properties` (InterviewProperties): All needed interview properties (required).
+  - `chat_history` (list[ChatMessage]): List of previous chat messages, optional (minimum 1 item).
+  - `prompt` (str): New user prompt to continue the chat (required, minimum length: 1).
 
 ### ChatResponse
 - **Attributes**:
-  - `interview_id` (int): Unique identifier for the interview.
-  - `response` (str): Chatbot's response to the prompt.
+  - `response` (str): Chatbot's response to the prompt (required).
   - `ended` (bool): Indicates if the interview has ended.
 
 ---
