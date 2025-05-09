@@ -1,3 +1,4 @@
+from fastapi import Body
 from pydantic import BaseModel, Field
 from config.database import Base
 from sqlalchemy import Column, String
@@ -8,6 +9,9 @@ class InterviewProperties(BaseModel):
     interview_type: str = Field(..., pattern="^(technical|behavioral)$")
     number_of_questions: int = Field(..., gt=2, le=15)
     skills: list[str] = []
+
+class InterviewRequest(BaseModel):
+    interview_id: int   
 
 class InterviewResponse(BaseModel):
     response: str
@@ -23,9 +27,7 @@ class ChatMessage(BaseModel):
     role: str = Field(..., pattern="^(user|assistant)$")
     message: str = Field(..., min_length=1)
 
-class ChatRequest(BaseModel):
-    interview_properties: InterviewProperties
-    chat_history: list[ChatMessage] = Field(default_factory=list, min_items=1)
+class ChatRequest(InterviewRequest, BaseModel):
     prompt: str = Field(..., min_length=1)
 
 class ChatResponse(BaseModel):

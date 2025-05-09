@@ -41,27 +41,17 @@ HireBot is an advanced AI-powered chatbot designed to assist with interview prep
 ### Initialize Interview
 **Endpoint**: `/init_interview`  
 **Method**: `POST`  
-**Description**: Initializes a new interview session by generating interview instructions and storing the session in the database.  
+**Description**: Initializes a new interview session by generating interview instructions and the AI Response which starts the interview.  
 
 **Request Model**:
 ```json
 {
-  "candidate_name": str,
-  "job_title": str,
-  "interview_type": str,
-  "number_of_questions": int,
-  "skills": list[str]
+  "interview_id": int,
 }
 ```
 
 **Request Attributes**:
-- `candidate_name` (str): Name of the candidate (required, minimum length: 1).
-- `job_title` (str): Job title for the interview (required, minimum length: 1).
-- `interview_type` (str): Type of interview. Allowed values:
-  - `"technical"`
-  - `"behavioral"`
-- `number_of_questions` (int): Number of questions in the interview. Must be greater than 2 and less than or equal to 15 (required).
-- `skills` (list[str]): List of skills to focus on during the interview (optional, defaults to an empty list).
+- `interview_id` (int): Interview Id which is stored in the database.
 
 **Response Model**:
 ```json
@@ -87,19 +77,13 @@ HireBot is an advanced AI-powered chatbot designed to assist with interview prep
 **Request Model**:
 ```json
 {
-  "interview_properties": InterviewProperties,
-  "chat_history": list[ChatMessage],
+  "interview_id": int,
   "prompt": str
 }
 ```
 
 **Request Attributes**:
-- `interview_properties` (InterviewProperties): All needed interview properties (required).
-- `chat_history` (list[ChatMessage]): List of previous chat messages (optional, minimum 1 item). Each message contains:
-  - `role` (str): Role of the message sender. Allowed values:
-    - `"user"`
-    - `"assistant"`
-  - `message` (str): Content of the message (required, minimum length: 1).
+- `interview_id` (int): Interview Id which is stored in the database.
 - `prompt` (str): New user prompt to continue the chat (required, minimum length: 1).
 
 **Response Model**:
@@ -120,7 +104,7 @@ HireBot is an advanced AI-powered chatbot designed to assist with interview prep
 
 ---
 
-## Request and Response Models
+## Models
 
 ### InterviewProperties
 - **Attributes**:
@@ -137,20 +121,13 @@ HireBot is an advanced AI-powered chatbot designed to assist with interview prep
 
 ### ChatRequest
 - **Attributes**:
-  - `interview_properties` (InterviewProperties): All needed interview properties (required).
-  - `chat_history` (list[ChatMessage]): List of previous chat messages, optional (minimum 1 item).
+  - `interview_id` (int): Interview Id which is stored in the database.
   - `prompt` (str): New user prompt to continue the chat (required, minimum length: 1).
 
 ### ChatResponse
 - **Attributes**:
   - `response` (str): Chatbot's response to the prompt (required).
   - `ended` (bool): Indicates if the interview has ended.
-
----
-
-## Restricted Values for Attributes
-- `interview_type`: `"technical"`, `"behavioral"`.
-- `role` (in `ChatMessage`): `"user"`, `"assistant"`.
 
 ---
 
