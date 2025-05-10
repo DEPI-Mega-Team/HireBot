@@ -65,7 +65,7 @@ with st.sidebar: # Initialize Side Bar Items
     job_title = st.text_input("Job Title")
     interview_type = st.selectbox("Interview Type", ["behavioral", "technical"])
     number_of_questions = st.number_input("Number of Questions", min_value=1, max_value=10, value=5)
-    skills = st_tags()
+    skills = st_tags(label="Enter Your Skills")
     
     # Store user input in session state
     st.session_state.data['candidate_name'] = name
